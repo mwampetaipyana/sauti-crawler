@@ -1,0 +1,113 @@
+{% extends "admin/base_site.html" %}
+{% load static crawler_admin %}
+
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+{% block coltype %}colM{% endblock %}
+
+{% block page_header %}
+{% pending_review_count as pending %}
+<div class="page-header welcome">
+  <div class="welcome-who">
+    <span class="avatar avatar-large" aria-hidden="true">{{ user|initials }}</span>
+    <div>
+      <h1>Karibu tena, {% firstof user.first_name user.get_username %}</h1>
+      <p class="welcome-line">
+        <svg aria-hidden="true"><use href="#i-inbox"/></svg>
+        {% if pending %}{% if pending == 1 %}Kero 1 inasubiri{% else %}Kero {{ pending }} zinasubiri{% endif %} ukaguzi wako.{% else %}Hakuna kero inayosubiri ukaguzi.{% endif %}
+      </p>
+    </div>
+  </div>
+  <div class="welcome-actions">
+    <a class="button button-stroked" href="{% url 'dashboard' %}">
+      <svg aria-hidden="true"><use href="#i-chart-bar"/></svg>Fungua dashibodi
+    </a>
+    <a class="button button-primary" href="{% url 'admin:crawler_article_changelist' %}?is_concern__exact=1&amp;review_status__exact=unreviewed">
+      <svg aria-hidden="true"><use href="#i-clipboard-document-check"/></svg>Kagua kero
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% crawl_overview as overview %}
+<div id="content-main" class="overview">
+
+  <section class="summary-grid" aria-label="Muhtasari">
+    <a class="card summary-card" href="{% url 'admin:crawler_article_changelist' %}?is_concern__exact=1&amp;review_status__exact=unreviewed">
+      <span class="summary-title">Zinasubiri ukaguzi</span>
+      <span class="summary-value tone-indigo">{{ overview.pending_review }}</span>
+      <span class="summary-label">kero ambazo hazijathibitishwa wala kukataliwa</span>
+    </a>
+    <a class="card summary-card" href="{% url 'dashboard' %}?period=7">
+      <span class="summary-title">Kero mpya</span>
+      <span class="summary-value tone-teal">{{ overview.new_this_week }}</span>
+      <span class="summary-label">siku 7 zilizopita; wiki iliyotangulia {{ overview.new_last_week }}</span>
+    </a>
+    <a class="card summary-card" href="{% url 'admin:crawler_source_changelist' %}{% if overview.failing_sources %}?hali=hitilafu{% endif %}">
+      <span class="summary-title">Vyanzo vinavyofanya kazi</span>
+      <span class="summary-value {% if overview.failing_sources %}tone-critical{% else %}tone-teal{% endif %}">{{ overview.sources_working }}<small> / {{ overview.sources_enabled }}</small></span>
+      <span class="summary-label">{% if overview.failing_sources == 1 %}chanzo 1 kilikataa kusomeka mara ya mwisho{% elif overview.failing_sources %}vyanzo {{ overview.failing_sources }} vilikataa kusomeka mara ya mwisho{% elif not overview.unread_sources %}vyote vilisomeka mara ya mwisho{% endif %}{% if overview.unread_sources %}{% if overview.failing_sources %}; {% endif %}{% if overview.unread_sources == 1 %}chanzo 1 bado hakijasomwa{% else %}vyanzo {{ overview.unread_sources }} bado havijasomwa{% endif %}{% endif %}</span>
+    </a>
+    <a class="card summary-card" href="{% url 'admin:crawler_article_changelist' %}">
+      <span class="summary-title">Habari zilizohifadhiwa</span>
+      <span class="summary-value tone-saffron">{{ overview.articles_stored }}</span>
+      <span class="summary-label">zote, zikiwemo zisizo kero</span>
+    </a>
+  </section>
+
+  <section class="overview-row">
+    <div class="card crawl-card">
+      <h2 class="card-title">Tafuta habari mpya</h2>
+      <div id="crawl-panel" data-url="{% url 'crawl_panel' %}">
+        {% include 'crawler/_crawl_panel.html' with crawl=overview.crawl crawl_error=overview.crawl_error crawl_next=request.get_full_path %}
+      </div>
+      <p id="crawl-announce" class="visually-hidden" role="status"></p>
+    </div>
+
+    <div class="card runs-card">
+      <div class="card-head">
+        <h2 class="card-title">Utafutaji wa hivi karibuni</h2>
+        <a href="{% url 'admin:crawler_crawlrun_changelist' %}">Ona kumbukumbu zote</a>
+      </div>
+      <table class="card-table">
+        <thead><tr><th scope="col">Chanzo</th><th scope="col">Lini</th><th scope="col">Matokeo</th><th scope="col" class="num">Mpya</th></tr></thead>
+        <tbody>
+          {% for run in overview.recent_runs %}
+          <tr>
+            <td><a href="{% url 'admin:crawler_crawlrun_change' run.pk %}">{{ run.source.name }}</a></td>
+            <td>{{ run.started_at|date:'j M, H:i' }}</td>
+            <td>{{ run|run_outcome }}</td>
+            <td class="num">{{ run.saved }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4">Bado hakuna utafutaji. Bonyeza <strong>Tafuta habari mpya</strong> kuanza.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title">Kero zinazosubiri ukaguzi</h2>
+      <a href="{% url 'admin:crawler_article_changelist' %}?is_concern__exact=1&amp;review_status__exact=unreviewed">Ona zote {{ overview.pending_review }}</a>
+    </div>
+    <table class="card-table">
+      <thead><tr><th scope="col">Kichwa</th><th scope="col">Aina</th><th scope="col">Chanzo</th><th scope="col">Tarehe</th></tr></thead>
+      <tbody>
+        {% for article in overview.pending_list %}
+        <tr>
+          <td class="wide"><a href="{% url 'article' article.pk %}">{{ article.title }}</a></td>
+          <td class="nowrap">{{ article|concern_kind }}</td>
+          <td class="nowrap">{{ article.source.name }}</td>
+          <td class="nowrap">{{ article.published_at|date:'j M Y' }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4">Kero zote zimekaguliwa.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+<script src="{% static 'crawler/crawl_panel.js' %}" defer></script>
+{% endblock %}

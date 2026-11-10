@@ -1,0 +1,44 @@
+<div class="crawl-panel{% if crawl.running %} is-running{% endif %}" data-running="{{ crawl.running|yesno:'true,false' }}">
+  {% if crawl_error %}<p class="crawl-error" role="alert">{{ crawl_error }}</p>{% endif %}
+  {% if crawl.running %}
+    <p class="crawl-title">Inatafuta habari mpya</p>
+    {% if crawl.started_at %}
+      <progress max="{{ crawl.total }}" value="{{ crawl.done }}">chanzo {{ crawl.done }} kati ya {{ crawl.total }}</progress>
+      <p>{% if crawl.current %}Inasoma <strong>{{ crawl.current }}</strong> (chanzo {{ crawl.done|add:1 }} kati ya {{ crawl.total }}).{% else %}Vyanzo {{ crawl.done }} kati ya {{ crawl.total }} vimesomwa.{% endif %}</p>
+      <p>Hadi sasa: habari mpya {{ crawl.saved }}, kero {{ crawl.flagged }}. Ilianza {{ crawl.started_ago }}.</p>
+    {% else %}
+      <p>Utafutaji ulioanzishwa nje ya ukurasa huu unaendelea.</p>
+    {% endif %}
+    <p class="crawl-note">Unaweza kufunga ukurasa huu; utafutaji utaendelea.</p>
+    {% if crawl.started_at %}
+    <form method="post" action="{% url 'stop_crawl' %}">
+      {% csrf_token %}
+      {% if crawl_next %}<input type="hidden" name="next" value="{{ crawl_next }}">{% endif %}
+      <button type="submit" class="stop" data-confirm="Simamisha utafutaji sasa? Vyanzo ambavyo bado havijasomwa vitarukwa.">Simamisha utafutaji</button>
+    </form>
+    <p class="crawl-note">Habari zilizokwisha hifadhiwa hubaki.</p>
+    {% endif %}
+  {% else %}
+    {% if just_finished %}
+      <p class="crawl-done">{% if crawl.stopped %}Utafutaji umesimamishwa baada ya vyanzo {{ crawl.done }} kati ya {{ crawl.total }}{% else %}Utafutaji umekamilika{% endif %}: habari mpya {{ crawl.saved }}, kero {{ crawl.flagged }}.
+        {# Newest first with no filters, so what was just found is at the top. #}
+        <a href="{% url 'dashboard' %}">Onyesha habari mpya</a></p>
+    {% endif %}
+    <form method="post" action="{% url 'start_crawl' %}">
+      {% csrf_token %}
+      {% if crawl_next %}<input type="hidden" name="next" value="{{ crawl_next }}">{% endif %}
+      <button type="submit" data-busy-label="Inaanza…">Tafuta habari mpya</button>
+    </form>
+    <p class="crawl-note">Husoma vyanzo vyote vilivyowashwa, na huchukua dakika kadhaa.</p>
+    {% if crawl.stopped and not just_finished %}
+      <p class="crawl-note">Utafutaji wa mwisho ulisimamishwa {{ crawl.finished_ago }}, baada ya vyanzo {{ crawl.done }} kati ya {{ crawl.total }}: habari mpya {{ crawl.saved }}, kero {{ crawl.flagged }}.</p>
+    {% elif crawl.finished_at and not just_finished %}
+      <p class="crawl-note">Utafutaji wa mwisho ulikamilika {{ crawl.finished_ago }}: habari mpya {{ crawl.saved }}, kero {{ crawl.flagged }}.</p>
+    {% elif crawl.stopped_early %}
+      <p class="crawl-note">Utafutaji wa mwisho ulisimama kabla ya kukamilika, baada ya vyanzo {{ crawl.done }} kati ya {{ crawl.total }}.</p>
+    {% endif %}
+    {% if crawl.failed_sources %}
+      <p class="crawl-note">{% if crawl.failed_sources == 1 %}Chanzo 1 hakikusomeka{% else %}Vyanzo {{ crawl.failed_sources }} havikusomeka{% endif %} mara ya mwisho. Angalia <a href="{% url 'admin:crawler_crawlrun_changelist' %}">kumbukumbu za utafutaji</a>.</p>
+    {% endif %}
+  {% endif %}
+</div>

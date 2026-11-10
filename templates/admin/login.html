@@ -1,0 +1,29 @@
+{% extends "admin/auth_base.html" %}
+
+{% block title %}{% if form.errors %}Hitilafu: {% endif %}Ingia{% endblock %}
+{% block auth_heading %}Ingia{% endblock %}
+{% block auth_intro %}{{ intro|default:'Ingia ili kukagua kero na kusimamia vyanzo vya habari.' }}{% endblock %}
+
+{% block auth_body %}
+{% if form.non_field_errors %}
+  {% for error in form.non_field_errors %}<p class="alert alert-error" role="alert">{{ error }}</p>{% endfor %}
+{% elif form.errors %}
+  <p class="alert alert-error" role="alert">Jaza sehemu zilizoonyeshwa hapo chini.</p>
+{% endif %}
+{% if user.is_authenticated %}
+  <p class="alert alert-info">Umeingia kama {{ username }}, lakini akaunti hii haina ruhusa ya kufungua ukurasa huu. Ingia kwa akaunti nyingine.</p>
+{% endif %}
+
+<form class="auth-form" action="{{ app_path }}" method="post" id="login-form">
+  {% csrf_token %}
+  {% include 'admin/_auth_field.html' with field=form.username label='Jina la mtumiaji' %}
+  {% include 'admin/_auth_field.html' with field=form.password label='Nenosiri' reveal=True %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <div class="auth-row">
+    <label class="checkbox"><input type="checkbox" name="remember" value="1"> Nikumbuke kwenye kompyuta hii</label>
+    {% url 'admin_password_reset' as password_reset_url %}
+    {% if password_reset_url %}<a href="{{ password_reset_url }}">Umesahau nenosiri?</a>{% endif %}
+  </div>
+  <button class="button button-primary button-large" type="submit">Ingia</button>
+</form>
+{% endblock %}

@@ -1,0 +1,21 @@
+<div class="field{% if field.errors %} has-error{% endif %}">
+  <label for="{{ field.id_for_label }}">{{ label|default:field.label }}</label>
+  <div class="field-control">
+    {{ field }}
+    {% if reveal %}
+    <button type="button" class="icon-button reveal" data-reveal="{{ field.id_for_label }}" aria-label="Onyesha nenosiri" aria-pressed="false">
+      <svg aria-hidden="true"><use href="#i-eye"/></svg>
+    </button>
+    {% endif %}
+  </div>
+  {% if help %}
+  {# Django's own rules text has no Swahili translation, so the default validators are described here. #}
+  <ul class="field-help">
+    <li>Lisifanane na jina lako au taarifa zako nyingine.</li>
+    <li>Liwe na herufi 8 au zaidi.</li>
+    <li>Lisiwe nenosiri linalotumiwa na watu wengi.</li>
+    <li>Lisiwe la tarakimu peke yake.</li>
+  </ul>
+  {% endif %}
+  {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+</div>

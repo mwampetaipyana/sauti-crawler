@@ -1,0 +1,10 @@
+{% extends "admin/auth_base.html" %}
+
+{% block title %}Umetoka{% endblock %}
+{% block auth_heading %}Umetoka{% endblock %}
+{% block auth_intro %}Umetoka kwenye akaunti yako kwa usalama.{% endblock %}
+
+{% block auth_body %}
+<a class="button button-primary button-large" href="{% url 'admin:login' %}">Ingia tena</a>
+<p class="auth-foot"><a href="{% url 'dashboard' %}">Fungua dashibodi ya kero</a></p>
+{% endblock %}

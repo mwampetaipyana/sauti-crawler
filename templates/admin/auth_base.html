@@ -1,0 +1,37 @@
+{% load static %}<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="NONE,NOARCHIVE">
+<title>{% block title %}Ingia{% endblock %} | Sauti ya Wananchi</title>
+<script src="{% static 'admin/js/theme.js' %}"></script>
+<link rel="stylesheet" href="{% static 'crawler/fonts.css' %}">
+<link rel="stylesheet" href="{% static 'crawler/admin.css' %}">
+</head>
+<body class="sauti-auth">
+{% include 'admin/_icons.svg' %}
+<div class="auth">
+  <main class="auth-form-side">
+    <div class="auth-box">
+      <a class="auth-brand" href="{% url 'dashboard' %}">
+        <span class="auth-mark" aria-hidden="true"></span>Sauti ya Wananchi
+      </a>
+      <h1 class="auth-heading">{% block auth_heading %}{% endblock %}</h1>
+      <p class="auth-intro">{% block auth_intro %}{% endblock %}</p>
+      {% block auth_body %}{% endblock %}
+    </div>
+  </main>
+  <aside class="auth-story" aria-label="Kuhusu Sauti ya Wananchi">
+    <div class="auth-story-text">
+      <p class="auth-story-heading">Kero za wananchi, mahali pamoja.</p>
+      <p>Habari za Kiswahili na machapisho ya JamiiForums husomwa kila siku. Kero za wananchi
+        hupangwa kwa sekta na mkoa, kisha hukaguliwa hapa kabla ya kutumika.</p>
+      <p class="auth-story-figures">Inaonekana kwa wenye akaunti pekee.</p>
+    </div>
+  </aside>
+</div>
+<script src="{% static 'crawler/admin_shell.js' %}" defer></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:17
+    container_name: crawler-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      # Reachable only from this computer. Ports 5432 and 5433 are already in use here.
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
+    volumes:
+      - crawler-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  crawler-db-data:

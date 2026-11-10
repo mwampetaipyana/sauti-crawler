@@ -1,0 +1,72 @@
+{% extends 'crawler/base.html' %}
+{% block title %}{{ article.title }} | Sauti ya Wananchi{% endblock %}
+
+{% block breadcrumbs %}
+<ol class="breadcrumbs">
+  <li><a href="{{ back_url }}">Kero za wananchi</a></li>
+  <li aria-current="page">Habari</li>
+</ol>
+{% endblock %}
+{% block content_title %}
+<h1 class="article-title">{{ article.title }}</h1>
+<p class="story-meta article-meta">
+  <span>Chanzo: {{ article.source.name }}</span>
+  <time datetime="{{ article.published_at|date:'c' }}">{% if article.published_is_estimated %}Ilipatikana {% endif %}{{ article.published_at|date:'j F Y' }}</time>
+  {% if article.region %}<span>{{ article.region }}</span>{% endif %}
+  {% if article.source.is_forum %}<span class="badge badge-warning">Chapisho la jukwaa, halijathibitishwa</span>{% endif %}
+  {% if article.is_paid_content %}<span class="badge badge-neutral">Muhtasari tu</span>{% endif %}
+</p>
+<p class="article-back"><a href="{{ back_url }}"><svg aria-hidden="true"><use href="#i-arrow-left"/></svg>Rudi kwenye orodha</a></p>
+{% endblock %}
+
+{% block content %}
+<div class="article-layout">
+  <article class="card article-card">
+    <div class="story-text">{% for paragraph in article.paragraphs %}<p>{{ paragraph }}</p>{% endfor %}</div>
+  </article>
+
+  {% if request.user.is_staff %}
+  <aside class="card review-card" aria-labelledby="review-heading">
+    <h2 class="card-title" id="review-heading">Ukaguzi</h2>
+    <div class="review-body">
+      {% if article.review_status == 'confirmed' %}<p><span class="badge badge-good">Imethibitishwa</span> Mkaguzi amethibitisha kuwa hii ni kero ya wananchi.</p>
+      {% elif article.review_status == 'rejected' %}<p><span class="badge badge-critical">Imekataliwa</span> Mkaguzi ameikataa habari hii, hivyo haionekani kwenye orodha.</p>
+      {% elif article.is_concern %}<p><span class="badge badge-neutral">Haijakaguliwa</span> Aina: {{ article.get_concern_type_display }}. Alama: {{ article.concern_score }}.</p>
+      {% else %}<p>Mfumo haukuitambua habari hii kama kero ya wananchi.</p>{% endif %}
+
+      <details class="why">
+        <summary>Kwa nini habari hii imeorodheshwa</summary>
+        <dl>
+          {% if article.matched_terms.concern %}
+          <dt>Maneno ya tatizo</dt>
+          <dd>{% for term in article.matched_terms.concern %}<span class="term">{{ term }}</span>{% endfor %}</dd>
+          {% endif %}
+          {% if article.matched_terms.voice %}
+          <dt>Wanaoathirika</dt>
+          <dd>{% for term in article.matched_terms.voice %}<span class="term">{{ term }}</span>{% endfor %}</dd>
+          {% endif %}
+          {% for sector in sectors %}
+          <dt>{{ sector.name }}</dt>
+          <dd>{% for term in sector.terms %}<span class="term">{{ term }}</span>{% endfor %}</dd>
+          {% endfor %}
+        </dl>
+      </details>
+
+      <form class="review" method="post" action="{% url 'review_article' article.pk %}">
+        {% csrf_token %}
+        {% if back %}<input type="hidden" name="back" value="{{ back }}">{% endif %}
+        {% if article.review_status != 'confirmed' %}<button class="button button-primary" name="decision" value="confirmed">Thibitisha kama kero</button>{% endif %}
+        {% if article.review_status != 'rejected' %}<button class="button button-stroked" name="decision" value="rejected">Kataa na ufiche</button>{% endif %}
+        {% if article.review_status != 'unreviewed' %}<button class="button button-stroked" name="decision" value="unreviewed">Futa ukaguzi</button>{% endif %}
+        {% if next_unreviewed %}<label class="checkbox review-then"><input type="checkbox" name="then" value="next" checked> Baada ya uamuzi, fungua kero inayofuata</label>{% endif %}
+      </form>
+      {% if next_unreviewed %}
+      <p class="review-next"><a href="{% url 'article' next_unreviewed.pk %}{% if back %}?back={{ back|urlencode }}{% endif %}">Ruka: kero inayofuata kukaguliwa</a></p>
+      {% else %}
+      <p class="review-next">Hakuna kero nyingine inayosubiri ukaguzi.</p>
+      {% endif %}
+    </div>
+  </aside>
+  {% endif %}
+</div>
+{% endblock %}

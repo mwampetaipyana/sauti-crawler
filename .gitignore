@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+db.sqlite3
+.env
+*.lock
+*.dump
+crawl.log
+crawl.log.1
+.crawl-state.json
+.crawl-state.tmp

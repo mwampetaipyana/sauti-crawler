@@ -1,0 +1,19 @@
+/* Served from this site rather than Google Fonts, so pages don't wait on a third-party request
+   (slow on mobile data, absent offline). Latin subset only; Swahili needs nothing more. */
+@font-face {
+  font-family: 'Atkinson Hyperlegible'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('fonts/atkinson-hyperlegible-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible'; font-style: italic; font-weight: 400; font-display: swap;
+  src: url('fonts/atkinson-hyperlegible-italic-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('fonts/atkinson-hyperlegible-700.woff2') format('woff2');
+}
+@font-face {
+  /* One variable file covers both weights used. */
+  font-family: 'Bricolage Grotesque'; font-style: normal; font-weight: 500 800; font-display: swap;
+  src: url('fonts/bricolage-grotesque.woff2') format('woff2');
+}

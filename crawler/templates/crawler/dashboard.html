@@ -1,0 +1,177 @@
+{% extends 'crawler/base.html' %}
+{% load static %}
+{% block title %}Kero za wananchi | Sauti ya Wananchi{% endblock %}
+
+{% block nav-breadcrumbs %}{% endblock %}
+{% block bodyclass %}{{ block.super }} concerns-page{% endblock %}
+{% block content_title %}
+{# The headline is written from the data; each sector named in it filters the list. #}
+<h1 class="summary-sentence">{{ summary.opening }}, {{ summary.text }}{% if summary.selected_sector %} {{ summary.selected_sector }}{% endif %}{% for bar in summary.sectors %}{% if not forloop.first %}{% if forloop.last %} na{% else %},{% endif %}{% endif %} <a href="?{{ bar.query }}">{{ bar.name }}</a>{% endfor %}{{ summary.end }}</h1>
+<p class="summary-facts">
+  {% if page.paginator.count %}Habari {{ page.paginator.count }} kutoka {% if source_count == 1 %}chanzo 1{% else %}vyanzo {{ source_count }}{% endif %}. {% endif %}{% if last_crawl_ago %}Imesasishwa {{ last_crawl_ago }}.{% else %}Bado haijasasishwa.{% endif %}
+</p>
+<ul class="type-key" aria-label="Aina za kero">
+  {% for row in type_counts %}
+  <li><a class="type-chip{% if row.selected %} is-selected{% endif %}" href="?{{ row.query }}"{% if row.selected %} aria-current="true"{% endif %}>
+    <span class="type-swatch type-{{ row.value }}" aria-hidden="true"></span>{{ row.label }} <span class="type-total">{{ row.total }}</span>
+  </a></li>
+  {% endfor %}
+</ul>
+{% endblock %}
+{% block object-tools %}
+<div class="page-tools">
+  <a class="button button-stroked" href="{% url 'export_csv' %}?{{ active_query }}">
+    <svg aria-hidden="true"><use href="#i-arrow-down-tray"/></svg>Pakua CSV
+  </a>
+  {% if csv_capped %}<p class="page-tools-note">Faili lina habari {{ csv_max_rows }} za kwanza tu. Ongeza vichujio ili kupata zote.</p>{% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="reader-layout">
+  <div class="reader-side">
+    <form method="get" class="filter-panel" aria-labelledby="filter-heading">
+      <h2 class="card-title" id="filter-heading"><svg aria-hidden="true"><use href="#i-funnel"/></svg>Chuja</h2>
+      {% if filters.sector %}<input type="hidden" name="sector" value="{{ filters.sector }}">{% endif %}
+      {% if filters.type %}<input type="hidden" name="type" value="{{ filters.type }}">{% endif %}
+      {% if filters.order %}<input type="hidden" name="order" value="{{ filters.order }}">{% endif %}
+      <div class="filter-field filter-search">
+        <label for="q">Tafuta</label>
+        <input id="q" type="search" name="q" value="{{ filters.q }}" placeholder="umeme, ada za shule">
+      </div>
+      <div class="filter-field">
+        <label for="period">Muda</label>
+        <select id="period" name="period">
+          {% for value, label in periods.items %}<option value="{{ value }}"{% if filters.period == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label for="region">Mkoa</label>
+        <select id="region" name="region">
+          <option value="">Mikoa yote</option>
+          {% for region in regions %}<option value="{{ region.value }}"{% if filters.region == region.value %} selected{% endif %}>{{ region.value }} ({{ region.total }})</option>{% endfor %}
+        </select>
+      </div>
+      <div class="filter-field filter-wide">
+        <label for="source">Chanzo</label>
+        <select id="source" name="source">
+          <option value="">Vyanzo vyote</option>
+          {% for source in source_options %}<option value="{{ source.pk }}"{% if filters.source == source.pk|stringformat:"d" %} selected{% endif %}>{{ source.name }} ({{ source.total }})</option>{% endfor %}
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="button button-primary">Chuja</button>
+      </div>
+    </form>
+
+    <section class="card sectors" aria-labelledby="sector-heading">
+      <div class="card-head">
+        <h2 class="card-title" id="sector-heading">Kwa sekta</h2>
+      </div>
+      <p class="card-hint">Habari moja inaweza kuwa kwenye sekta hadi tatu.</p>
+      <ul class="bars">
+        {% for bar in sector_bars %}
+        <li>
+          <a class="bar-row{% if bar.selected %} is-selected{% endif %}" href="?{{ bar.query }}"{% if bar.selected %} aria-current="true"{% endif %} title="{{ bar.name }}: habari {{ bar.total }}">
+            <span class="bar-name">{{ bar.name }}</span>
+            <span class="bar-track">{% if bar.total %}<span class="bar-fill" style="width: {{ bar.percent }}%"></span>{% endif %}</span>
+            <span class="bar-total">{{ bar.total }}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    {% if request.user.is_staff %}
+    <div class="card crawl-card">
+      <h2 class="card-title">Tafuta habari mpya</h2>
+      <div id="crawl-panel" data-url="{% url 'crawl_panel' %}">{% include 'crawler/_crawl_panel.html' with crawl_next=request.get_full_path %}</div>
+      <p id="crawl-announce" class="visually-hidden" role="status"></p>
+    </div>
+    {% endif %}
+    <p class="reader-note">Jumla ya habari zilizosomwa: {{ stored_total }}.</p>
+  </div>
+
+  <div class="reader-main">
+    <section class="card stories-card" aria-labelledby="stories-heading">
+      <div class="card-head">
+        <h2 class="card-title" id="stories-heading">{% if filters.order == 'score' %}Habari zenye alama za juu{% else %}Habari za hivi karibuni{% endif %}</h2>
+        <div class="card-head-tools">
+          {% if page.paginator.num_pages > 1 %}<span class="card-meta">Ukurasa {{ page.number }} kati ya {{ page.paginator.num_pages }}</span>{% endif %}
+          {% if page.paginator.count > 1 %}
+          <form method="get" class="order-form">
+            {% for key, value in filters.items %}{% if value and key != 'order' %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+            <label for="order">Panga</label>
+            <select id="order" name="order" data-autosubmit>
+              {% for value, label in orders.items %}<option value="{{ value }}"{% if filters.order == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+            <noscript><button type="submit" class="button button-stroked">Panga</button></noscript>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      {% if chips %}
+      <ul class="filter-chips" aria-label="Vichujio vinavyotumika">
+        {% for chip in chips %}
+        <li><a class="filter-chip" href="?{{ chip.query }}" aria-label="Ondoa kichujio: {{ chip.label }}">{{ chip.label }}<svg aria-hidden="true"><use href="#i-x-mark"/></svg></a></li>
+        {% endfor %}
+        {% if chips|length > 1 %}<li><a class="filter-chips-clear" href="{% url 'dashboard' %}?period={{ filters.period }}">Ondoa vyote</a></li>{% endif %}
+      </ul>
+      {% endif %}
+      {% if page.object_list %}
+      <ol class="stories">
+        {% for article in page.object_list %}
+        <li class="story">
+          {% with paragraphs=article.paragraphs %}
+          {# A heading holding a button, not <details>: headings inside <summary> are lost to screen readers. #}
+          <div class="story-summary">
+            <h3><button type="button" class="story-toggle" aria-controls="story-{{ article.pk }}">
+              <svg class="story-chevron" aria-hidden="true"><use href="#i-chevron-right"/></svg>{{ article.title }}
+            </button></h3>
+            <p class="story-meta">
+              <span class="story-type"><span class="type-swatch type-{{ article.concern_type|default:'concern' }}" aria-hidden="true"></span>{{ article.get_concern_type_display|default:'Wasiwasi' }}</span>
+              {% if article.source.is_forum %}<span class="badge badge-warning">Chapisho la jukwaa, halijathibitishwa</span>{% endif %}
+              {% if article.is_paid_content %}<span class="badge badge-neutral">Muhtasari tu</span>{% endif %}
+              {% with sectors=article.sectors.all %}{% if sectors %}<span class="meta-item" title="Sekta"><svg aria-hidden="true"><use href="#i-squares-2x2"/></svg><span class="visually-hidden">Sekta: </span>{% for sector in sectors %}{{ sector.name_sw|default:sector.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>{% endif %}{% endwith %}
+              {% if article.region %}<span class="meta-item" title="Mkoa"><svg aria-hidden="true"><use href="#i-globe-alt"/></svg><span class="visually-hidden">Mkoa: </span>{{ article.region }}</span>{% endif %}
+              <span class="meta-item" title="Chanzo"><svg aria-hidden="true"><use href="#i-newspaper"/></svg><span class="visually-hidden">Chanzo: </span>{{ article.source.name }}</span>
+              <time datetime="{{ article.published_at|date:'c' }}">{{ article.published_at|date:'j M Y' }}</time>
+            </p>
+            {% if paragraphs %}<p class="story-preview" aria-hidden="true">{{ paragraphs.0 }}</p>{% endif %}
+          </div>
+          <div class="story-body" id="story-{{ article.pk }}">
+            <div class="story-text">{% for paragraph in paragraphs %}<p>{{ paragraph }}</p>{% endfor %}</div>
+            <p class="story-link"><a href="{% url 'article' article.pk %}{% if back_query %}?back={{ back_query|urlencode }}{% endif %}">{% if request.user.is_staff %}Kagua habari hii{% else %}Fungua habari hii peke yake{% endif %}</a></p>
+          </div>
+          {% endwith %}
+        </li>
+        {% endfor %}
+      </ol>
+      {% if page.has_other_pages %}
+      <nav class="pagination" aria-label="Kurasa">
+        {% if page.has_previous %}
+          {% if page.number > 2 %}<a class="button button-stroked" href="?{{ active_query }}">Ukurasa wa kwanza</a>{% endif %}
+          <a class="button button-stroked" href="?{{ active_query }}&amp;page={{ page.previous_page_number }}" rel="prev">Ukurasa uliotangulia</a>
+        {% endif %}
+        <span>Ukurasa {{ page.number }} kati ya {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}
+          <a class="button button-stroked" href="?{{ active_query }}&amp;page={{ page.next_page_number }}" rel="next">Ukurasa unaofuata</a>
+          {% if page.paginator.num_pages > page.next_page_number %}<a class="button button-stroked" href="?{{ active_query }}&amp;page={{ page.paginator.num_pages }}">Ukurasa wa mwisho</a>{% endif %}
+        {% endif %}
+      </nav>
+      {% endif %}
+      {% elif outside_period %}
+      <div class="empty"><p>Hakuna habari katika {{ period_label }}{% if has_filters %} zinazolingana na vichujio hivi{% endif %}, lakini {% if outside_period == 1 %}iko 1{% else %}ziko {{ outside_period }}{% endif %} za zamani zaidi. <a href="?{{ all_time_query }}">Onyesha za muda wote</a>.</p></div>
+      {% elif has_filters %}
+      <div class="empty"><p>Hakuna habari zinazolingana na vichujio hivi. Ongeza muda au <a href="{% url 'dashboard' %}">ondoa vichujio</a>.</p></div>
+      {% elif request.user.is_staff %}
+      <div class="empty"><p>Bado hakuna kero zilizopatikana. Bonyeza <strong>Tafuta habari mpya</strong> ili kusoma vyanzo vya habari.</p></div>
+      {% else %}
+      <div class="empty"><p>Bado hakuna kero zilizopatikana. Wasimamizi wakitafuta habari mpya, zitaonekana hapa.</p></div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+<script src="{% static 'crawler/dashboard.js' %}" defer></script>
+{% if request.user.is_staff %}<script src="{% static 'crawler/crawl_panel.js' %}" defer></script>{% endif %}
+{% endblock %}
